@@ -34,6 +34,8 @@ export const loginUser = async (
 ) => {
   const { email, password } = req.body;
 
+  console.log({ email, password });
+
   const userExists = await User.findOne({ email });
   if (!userExists) {
     throw new ApiError("Invalid Credentials.", 400);

@@ -1,9 +1,4 @@
-import express, {
-  ErrorRequestHandler,
-  NextFunction,
-  Request,
-  Response,
-} from "express";
+import express, { NextFunction, Request, Response } from "express";
 import { configDotenv } from "dotenv";
 
 import cors from "cors";
@@ -12,12 +7,14 @@ import { authRoute } from "./routes/auth.routes";
 import { userRoute } from "./routes/user.routes";
 import { connectDB } from "./utils/db";
 import { ApiError } from "./utils/ApiError";
+import { leadsRoute } from "./routes/leads.routes";
 
 configDotenv();
 
 const app = express();
 app.use(cookieParser());
 app.use(express.json());
+app.use("/uploads", express.static("uploads"));
 
 app.use(
   cors({
@@ -28,6 +25,7 @@ app.use(
 
 app.use("/auth", authRoute);
 app.use("/user", userRoute);
+app.use("/leads", leadsRoute);
 
 app.use((err: ApiError, req: Request, res: Response, next: NextFunction) => {
   const { status = 500, message = "Something went wrong" } = err;

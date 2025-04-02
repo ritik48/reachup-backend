@@ -1,17 +1,25 @@
 import { NextFunction, Request, Response } from "express";
 import mongoose, { Document } from "mongoose";
 
+export type AsyncHandler = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => Promise<void>;
+
 export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
   name: string;
   email: string;
   password?: string;
+  isPasswordValid: (password: string) => Promise<boolean>;
 }
 
 export interface ILead extends Document {
   _id: mongoose.Types.ObjectId;
   title: string;
   user: mongoose.Types.ObjectId;
+  total: number;
 }
 
 export interface ILeadItem extends Document {
