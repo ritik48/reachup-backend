@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import { CookieOptions, NextFunction, Request, Response } from "express";
 import { User } from "../models/user";
 import { ApiError } from "../utils/ApiError";
 import { generateAccessToken } from "../utils/auth";
@@ -47,12 +47,12 @@ export const loginUser = async (
   }
 
   const token = generateAccessToken(userExists);
-  console.log({ token });
 
-  const options = {
+  const options: CookieOptions = {
     httpOnly: true,
     secure: true,
-    sameSite: true,
+    sameSite: "none",
+    maxAge: 24 * 60 * 60 * 1000,
   };
 
   const userWithoutPassword = Object.assign({}, userExists.toJSON());
@@ -65,11 +65,8 @@ export const loginUser = async (
       message: `You are logged in, ${userExists.name}`,
       token: token,
       user: userWithoutPassword,
+      success: true,
     });
-
-  res
-    .status(201)
-    .json({ success: true, message: "Account created successfully" });
 };
 
 export const logoutUser = async (
@@ -77,14 +74,15 @@ export const logoutUser = async (
   res: Response,
   next: NextFunction
 ) => {
-  const options = {
+  const options: CookieOptions = {
     httpOnly: true,
     secure: true,
-    sameSite: true,
+    sameSite: "none",
+    maxAge: 24 * 60 * 60 * 1000,
   };
 
   res
     .status(201)
     .clearCookie("token", options)
-    .json({ message: "You are logged out." });
+    .json({ message: "You are logged out.", success: true });
 };
