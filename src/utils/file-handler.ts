@@ -31,14 +31,26 @@ import csvParser from "csv-parser";
 import fs from "fs";
 import { error } from "console";
 
-const parseCSV = (filePath: string): Promise<any[]> => {
+const parseCSV = (
+  filePath: string,
+  singleRow: boolean = false
+): Promise<any> => {
   return new Promise((resolve, reject) => {
     const results: any[] = [];
+    let headers: string[] = [];
 
-    fs.createReadStream(filePath)
+    const stream = fs
+      .createReadStream(filePath)
       .pipe(csvParser())
+      .on("headers", (h) => {
+        headers = h;
+      })
       .on("data", (row) => {
         results.push(row);
+        singleRow && stream.destroy();
+      })
+      .on("close", () => {
+        resolve({ headers, row: results[0] || {} });
       })
       .on("end", () => {
         resolve(results);
@@ -50,11 +62,15 @@ const parseCSV = (filePath: string): Promise<any[]> => {
 };
 
 const deleteFile = async (filePath: string) => {
+  const resolvedPath = path.resolve(filePath);
+  console.log({ resolvedPath });
   return new Promise((resolve, reject) => {
-    fs.unlink(filePath, (err) => {
+    fs.unlink(resolvedPath, (err) => {
       if (err) {
+        console.log("errrrrrrrrrrrr", err);
         reject(err);
       } else {
+        console.log("sucessssssssssssssss");
         resolve("File deleted");
       }
     });
