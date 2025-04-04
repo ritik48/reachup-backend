@@ -20,6 +20,17 @@ export const fetchLeads = async (
   res.status(200).json({ success: true, data });
 };
 
+export const fetchLead = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { id } = req.params;
+  const data = await Lead.find({ _id: id });
+
+  res.status(200).json({ success: true, data });
+};
+
 export const updateLeads = async (
   req: Request,
   res: Response,
@@ -52,6 +63,7 @@ export const deleteLeads = async (
   if (!lead) throw new ApiError("Lead not found.", 400);
 
   await Lead.deleteOne({ _id: id });
+  await LeadItem.deleteMany({ leadId: id });
 
   res.status(201).json({ success: true, message: "Lead deleted successfully" });
 };
@@ -88,46 +100,117 @@ export const deleteLeadItems = async (
   res.status(201).json({ success: true, message: "Row deleted successfully" });
 };
 
-export const createLeads = async (req: Request, res: Response) => {
+export const createLead = async (req: Request, res: Response) => {
+  const { title } = req.body;
+
+  if (!title) throw new ApiError("Invalid request", 400);
+
+  const newLead = await Lead.create({ title, user: req.user?._id });
+
+  res.status(201).json({
+    success: true,
+    id: newLead._id,
+    message: "Lead created successfully",
+  });
+};
+
+export const uploadFile = async (req: Request, res: Response) => {
   const filePath = req.file?.path;
-  if (!filePath) {
-    throw new ApiError("No file provided.", 400);
+  const { id } = req.body;
+  if (!filePath || !id) {
+    res.status(400).json({ success: false, message: "No file provided." });
+    return;
   }
 
-  const { rows, title } = req.body;
-  if (!rows || !title) throw new ApiError("Invalid request", 400);
+  await Lead.updateOne({ _id: id }, { filePath });
 
-  const keys = (JSON.parse(rows) as string[]).map((k: string) =>
-    k.toLowerCase()
-  );
+  const rows = await parseCSV(filePath as string, true);
+
+  const headers = rows.headers; // Get CSV headers
+  const row = Object.values(rows.row); // Get first row
+
+  res.status(200).json({ success: true, filePath, headers, firstRow: row });
+};
+
+export const fetchSingleRow = async (req: Request, res: Response) => {
+  const { id } = req.query;
+  if (!id) {
+    throw new ApiError("Invalid request.", 400);
+  }
+
+  const lead = await Lead.findById(id);
+  if (!lead) {
+    throw new ApiError("Lead not found.", 400);
+  }
+  const filePath = lead.filePath;
+  if (!fs.existsSync(filePath as string)) {
+    throw new ApiError("File not found.", 400);
+  }
+
+  try {
+    const rows = await parseCSV(filePath as string, true);
+    console.log({ rows });
+
+    const headers = rows.headers; // Get CSV headers
+    const row = rows.row; // Get first row
+
+    res.status(200).json({ success: true, headers, row });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Error processing CSV." });
+  }
+};
+
+export const createLeadItems = async (req: Request, res: Response) => {
+  const { id, header, title } = req.body;
+  console.log({ id, header, title });
+  if (!id || !header || !title) {
+    throw new ApiError("Invalid request", 400);
+  }
+  console.log({ id, header });
+
+  const lead = await Lead.findById(id);
+  if (!lead) {
+    throw new ApiError("Lead not found.", 400);
+  }
+
+  const filePath = lead.filePath;
+  if (!fs.existsSync(filePath as string)) {
+    throw new ApiError("File not found.", 400);
+  }
+
+  const keys = (header as string[]).map((k: string) => k.toLowerCase().trim());
 
   let leadsResult;
   try {
-    leadsResult = await parseCSV(req.file?.path!);
-
-    // create new lead category
-    const newLead = await Lead.create({ title, user: req.user?._id });
+    leadsResult = await parseCSV(filePath!);
+    // console.log({ leadsResult });
 
     // update to have leads with only the keys that user selected in the frontend
     const formattedLead = leadsResult
-      .map((obj) => {
+      .map((obj: any) => {
         return Object.keys(obj)
-          .filter((key) => keys.includes(key.toLowerCase()))
+          .filter((key) => keys.includes(key.toLowerCase().trim()))
           .reduce((acc, key) => {
-            acc[key.toLowerCase()] = obj[key];
-            acc["leadId"] = newLead._id;
+            acc[key.toLowerCase().trim()] = obj[key].trim();
+            acc["leadId"] = id;
             return acc;
           }, {} as Record<string, any>);
       })
-      .filter((f) => Object.keys(f).length !== 0);
+      .filter((f: any) => Object.keys(f).length !== 0);
+    // console.log({ formattedLead });
 
+    await Lead.updateOne(
+      { _id: id },
+      { filePath: null, processed: true, title }
+    );
     // save individual rows
     await LeadItem.insertMany(formattedLead);
   } catch (error) {
     throw new ApiError("Error while reading the file", 500);
   } finally {
+    console.log({ filePathelete: filePath });
     // delete the file from server once the leads are saved
-    await deleteFile(req.file?.path!);
+    await deleteFile(filePath as string);
   }
-  res.status(201).json({ success: true, message: "Leads added successfull." });
+  res.status(201).json({ success: true, message: "Leads added successfully." });
 };
