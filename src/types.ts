@@ -20,6 +20,8 @@ export interface ILead extends Document {
   title: string;
   user: mongoose.Types.ObjectId;
   total: number;
+  filePath?: string;
+  processed: boolean;
 }
 
 export interface ILeadItem extends Document {
