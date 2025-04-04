@@ -41,6 +41,9 @@ export interface IEmailProvider extends Document {
   _id: mongoose.Types.ObjectId;
   provider: string;
   email: string;
-  access_token: string;
-  refresh_token: string;
+  password: string;
+  host: string;
+  port: number;
+  name: string;
+  user: mongoose.Types.ObjectId;
 }
