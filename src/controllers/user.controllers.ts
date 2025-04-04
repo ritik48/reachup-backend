@@ -49,7 +49,7 @@ export const addEmailSender = async (req: Request, res: Response) => {
   }
 
   // create the email provider
-  await EmailProvider.create({
+  const newEmailSender = await EmailProvider.create({
     email,
     port,
     host,
@@ -62,6 +62,7 @@ export const addEmailSender = async (req: Request, res: Response) => {
   res.status(200).json({
     success: true,
     message: "Email sender added successfully.",
+    data: newEmailSender,
   });
 };
 
@@ -88,4 +89,19 @@ export const verifyEmailSender = async (req: Request, res: Response) => {
       .status(200)
       .json({ success: false, message: "Email sender is not working." });
   }
+};
+
+export const deleteEmailSender = async (req: Request, res: Response) => {
+  const { id } = req.body;
+
+  if (!id) {
+    throw new ApiError("Invalid request", 400);
+  }
+
+  await EmailProvider.findOneAndDelete({ _id: id });
+
+  res.status(200).json({
+    success: true,
+    message: "Email sender deleted successfully.",
+  });
 };

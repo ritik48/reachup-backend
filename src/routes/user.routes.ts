@@ -3,6 +3,7 @@ import { asyncHandler } from "../utils/AsyncHandler";
 import { isAuthenticated } from "../utils/auth";
 import {
   addEmailSender,
+  deleteEmailSender,
   fetchCurrentUser,
   fetchUserEmails,
   verifyEmailSender,
@@ -13,6 +14,11 @@ const userRoute = express.Router();
 userRoute.get("/", isAuthenticated, asyncHandler(fetchCurrentUser));
 userRoute.get("/email-sender", isAuthenticated, asyncHandler(fetchUserEmails));
 userRoute.post("/email-sender", isAuthenticated, asyncHandler(addEmailSender));
+userRoute.delete(
+  "/email-sender",
+  isAuthenticated,
+  asyncHandler(deleteEmailSender)
+);
 userRoute.post(
   "/verify-email",
   isAuthenticated,
