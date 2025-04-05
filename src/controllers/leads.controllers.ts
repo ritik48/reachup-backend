@@ -14,10 +14,27 @@ export const fetchLeads = async (
   res: Response,
   next: NextFunction
 ) => {
-  const userId = req.user?.id;
-  const data = await Lead.find({ user: userId });
+  try {
+    const userId = req.user?.id;
 
-  res.status(200).json({ success: true, data });
+    // Get all leads for the user
+    const leads = await Lead.find({ user: userId });
+
+    // For each lead, count the number of LeadItems that reference it
+    const leadsWithItemCounts = await Promise.all(
+      leads.map(async (lead) => {
+        const totalItems = await LeadItem.countDocuments({ leadId: lead._id });
+        return {
+          ...lead.toObject(),
+          total: totalItems,
+        };
+      })
+    );
+
+    res.status(200).json({ success: true, data: leadsWithItemCounts });
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const fetchLead = async (
@@ -78,9 +95,15 @@ export const fetchLeadItems = async (
 
   if (!id) throw new ApiError("Invalid request", 400);
 
+  const lead = await Lead.findById(id);
+  if (!id) throw new ApiError("Lead not found.", 400);
+
   const data = await LeadItem.find({ leadId: id });
 
-  res.status(200).json({ success: true, data });
+  res.status(200).json({
+    success: true,
+    data: { title: lead?.title, leads: data, processed: lead?.processed },
+  });
 };
 
 export const deleteLeadItems = async (
