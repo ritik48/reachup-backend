@@ -8,6 +8,8 @@ import { userRoute } from "./routes/user.routes";
 import { connectDB } from "./utils/db";
 import { ApiError } from "./utils/ApiError";
 import { leadsRoute } from "./routes/leads.routes";
+import { agenda } from "./utils/agendaInit";
+import { workflowRoute } from "./routes/workflow.routes";
 
 configDotenv();
 
@@ -26,6 +28,7 @@ app.use(
 app.use("/auth", authRoute);
 app.use("/user", userRoute);
 app.use("/leads", leadsRoute);
+app.use("/workflow", workflowRoute);
 
 app.use((err: ApiError, req: Request, res: Response, next: NextFunction) => {
   const { status = 500, message = "Something went wrong" } = err;
@@ -39,7 +42,11 @@ app.use((err: ApiError, req: Request, res: Response, next: NextFunction) => {
 
 connectDB()
   .then(() => {
-    app.listen(3000, () => console.log("LISTENING ON 3000"));
+    agenda.start().then(() => {
+      console.log("Agenda started");
+
+      app.listen(3000, () => console.log("LISTENING ON 3000"));
+    });
   })
   .catch((err) => {
     console.log("Cannot connect to databse ", err);
