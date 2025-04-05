@@ -13,7 +13,7 @@ exports.logoutUser = exports.loginUser = exports.createAccount = void 0;
 const user_1 = require("../models/user");
 const ApiError_1 = require("../utils/ApiError");
 const auth_1 = require("../utils/auth");
-const createAccount = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+const createAccount = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { name, email, password } = req.body;
     const existingUser = yield user_1.User.findOne({ email });
     if (existingUser) {
