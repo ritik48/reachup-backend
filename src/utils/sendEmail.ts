@@ -3,6 +3,14 @@ import { EmailProvider } from "../models/emailProvider";
 import { LeadItem } from "../models/leadItem";
 import { nodemailerTransport } from "./nodemailerTransport";
 
+const EMAIL_TEMPLATES: any = {
+  1: { name: "Introduction Email", subject: "Nice to meet {{email}}" },
+  2: {
+    name: "Follow-up Email",
+    subject: "hey {{email}}, Following up on our conversation {{name}}",
+  },
+};
+
 export async function sendEmail({
   jobId,
   leadItemId,
@@ -10,12 +18,14 @@ export async function sendEmail({
   senderEmailId,
 }: any) {
   try {
-    console.log({ jobId, leadItemId, senderEmailId });
     const job = await EmailJob.findById(jobId);
     if (!job || job.status !== "scheduled") return;
 
     const leadItem = await LeadItem.findById(leadItemId);
-    const template = { content: "hello {{name}} {{email}}", subject: "Test 1" };
+    const template = {
+      content: "hello {{name}} {{email}}",
+      subject: EMAIL_TEMPLATES[templateId],
+    };
 
     if (!leadItem || !template) {
       throw new Error("Lead item or template not found");
@@ -48,15 +58,12 @@ export async function sendEmail({
 
     const info = await transporter.sendMail(mailOptions);
 
-    // Update job status
     job.status = "sent";
     job.sentTime = new Date();
     await job.save();
 
     return info;
   } catch (error: any) {
-    console.log({ error });
-    // Update job with error
     const job = await EmailJob.findById(jobId);
 
     if (!job) {

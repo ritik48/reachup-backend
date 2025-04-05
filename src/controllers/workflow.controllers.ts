@@ -1,12 +1,6 @@
 import { NextFunction, Request, Response } from "express";
-import { User } from "../models/user";
 import { ApiError } from "../utils/ApiError";
-import { generateAccessToken } from "../utils/auth";
-import { Lead } from "../models/lead";
 
-import fs from "fs";
-import csvParser from "csv-parser";
-import { deleteFile, parseCSV } from "../utils/file-handler";
 import { LeadItem } from "../models/leadItem";
 import { Workflow } from "../models/workflow";
 import { WorkflowExecution } from "../models/WorfklowExecution";
@@ -122,7 +116,6 @@ export const createWorkflow = async (
   next: NextFunction
 ) => {
   let { name, emailProvider } = req.body;
-  console.log({ name, emailProvider });
 
   const workflow = new Workflow({
     name,
@@ -187,8 +180,6 @@ export const executeWorkflow = async (
   nodes = JSON.parse(nodes || "[]");
   edges = JSON.parse(edges || "[]");
 
-  console.log({ nodes, edges });
-
   const workflow = await Workflow.findById(req.params.id);
   if (!workflow) {
     res.status(404).json({ error: "Workflow not found" });
@@ -203,13 +194,11 @@ export const executeWorkflow = async (
     res.status(400).json({ error: "Workflow contains no lead nodes" });
     return;
   }
-  console.log({ leadNodes });
 
   // Get all unique lead source IDs from the workflow's lead nodes
   const leadSourceIds = [
     ...new Set(leadNodes.map((node: any) => node.data.config.lead._id)),
   ];
-  console.log({ leadSourceIds });
 
   // Find all lead items from any of these lead sources
   const leadItems = await LeadItem.find({
@@ -325,7 +314,6 @@ async function scheduleForLeadItem(
       const job = new EmailJob({
         execution: execution._id,
         leadItem: leadItem._id,
-        // emailTemplate: node.data.config.template,
         status: "scheduled",
         scheduledTime: new Date(Date.now() + currentDelay * 60000),
         delayDuration: currentDelay,
@@ -340,7 +328,7 @@ async function scheduleForLeadItem(
         {
           jobId: job._id,
           leadItemId: leadItem._id,
-          templateId: "node.config.template",
+          templateId: node.data.config.template,
           senderEmailId: workflow.emailProvider,
         }
       );

@@ -1,4 +1,6 @@
 import jwt from "jsonwebtoken";
+import { configDotenv } from "dotenv";
+configDotenv();
 
 import { User } from "../models/user";
 import { ApiError } from "./ApiError";
