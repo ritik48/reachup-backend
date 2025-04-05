@@ -25,9 +25,9 @@ const storage = multer_1.default.diskStorage({
     },
 });
 const upload = (0, multer_1.default)({
-    storage: storage,
+    storage: multer_1.default.memoryStorage(), // Use memory storage instead of disk storage
     limits: {
-        fileSize: 20 * 1024 * 1024, // 20MB limit
+        fileSize: 20 * 1024 * 1024, // 20MB limit (keep same)
     },
     fileFilter: (req, file, cb) => {
         const allowedTypes = [".csv"];
@@ -43,12 +43,12 @@ const upload = (0, multer_1.default)({
 exports.upload = upload;
 const csv_parser_1 = __importDefault(require("csv-parser"));
 const fs_1 = __importDefault(require("fs"));
-const parseCSV = (filePath, singleRow = false) => {
+const stream_1 = require("stream");
+const parseCSV = (buffer, singleRow = false) => {
     return new Promise((resolve, reject) => {
         const results = [];
         let headers = [];
-        const stream = fs_1.default
-            .createReadStream(filePath)
+        const stream = stream_1.Readable.from(buffer.toString())
             .pipe((0, csv_parser_1.default)())
             .on("headers", (h) => {
             headers = h;

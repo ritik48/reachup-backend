@@ -8,14 +8,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createLeadItems = exports.fetchSingleRow = exports.uploadFile = exports.createLead = exports.deleteLeadItems = exports.fetchLeadItems = exports.deleteLeads = exports.updateLeads = exports.fetchLead = exports.fetchLeads = void 0;
 const ApiError_1 = require("../utils/ApiError");
 const lead_1 = require("../models/lead");
-const fs_1 = __importDefault(require("fs"));
 const file_handler_1 = require("../utils/file-handler");
 const leadItem_1 = require("../models/leadItem");
 const fetchLeads = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
@@ -108,18 +104,17 @@ const createLead = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 });
 exports.createLead = createLead;
 const uploadFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    const filePath = (_a = req.file) === null || _a === void 0 ? void 0 : _a.path;
+    const file = req.file;
     const { id } = req.body;
-    if (!filePath || !id) {
+    if (!file || !id) {
         res.status(400).json({ success: false, message: "No file provided." });
         return;
     }
-    yield lead_1.Lead.updateOne({ _id: id }, { filePath });
-    const rows = yield (0, file_handler_1.parseCSV)(filePath, true);
+    yield lead_1.Lead.updateOne({ _id: id }, { fileData: file.buffer, fileName: file.originalname, fileSize: file.size });
+    const rows = yield (0, file_handler_1.parseCSV)(file.buffer, true);
     const headers = rows.headers; // Get CSV headers
     const row = Object.values(rows.row); // Get first row
-    res.status(200).json({ success: true, filePath, headers, firstRow: row });
+    res.status(200).json({ success: true, headers, firstRow: row });
 });
 exports.uploadFile = uploadFile;
 const fetchSingleRow = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -131,12 +126,12 @@ const fetchSingleRow = (req, res) => __awaiter(void 0, void 0, void 0, function*
     if (!lead) {
         throw new ApiError_1.ApiError("Lead not found.", 400);
     }
-    const filePath = lead.filePath;
-    if (!fs_1.default.existsSync(filePath)) {
+    const fileBuffer = lead.fileData;
+    if (!fileBuffer) {
         throw new ApiError_1.ApiError("File not found.", 400);
     }
     try {
-        const rows = yield (0, file_handler_1.parseCSV)(filePath, true);
+        const rows = yield (0, file_handler_1.parseCSV)(fileBuffer, true);
         console.log({ rows });
         const headers = rows.headers; // Get CSV headers
         const row = rows.row; // Get first row
@@ -158,14 +153,13 @@ const createLeadItems = (req, res) => __awaiter(void 0, void 0, void 0, function
     if (!lead) {
         throw new ApiError_1.ApiError("Lead not found.", 400);
     }
-    const filePath = lead.filePath;
-    if (!fs_1.default.existsSync(filePath)) {
-        throw new ApiError_1.ApiError("File not found.", 400);
+    if (!lead.fileData) {
+        throw new ApiError_1.ApiError("File data not found.", 400);
     }
     const keys = header.map((k) => k.toLowerCase().trim());
     let leadsResult;
     try {
-        leadsResult = yield (0, file_handler_1.parseCSV)(filePath);
+        leadsResult = yield (0, file_handler_1.parseCSV)(lead.fileData);
         // console.log({ leadsResult });
         // update to have leads with only the keys that user selected in the frontend
         const formattedLead = leadsResult
@@ -188,9 +182,9 @@ const createLeadItems = (req, res) => __awaiter(void 0, void 0, void 0, function
         throw new ApiError_1.ApiError("Error while reading the file", 500);
     }
     finally {
-        console.log({ filePathelete: filePath });
+        // console.log({ filePathelete: filePath });
         // delete the file from server once the leads are saved
-        yield (0, file_handler_1.deleteFile)(filePath);
+        // await deleteFile(filePath as string);
     }
     res.status(201).json({ success: true, message: "Leads added successfully." });
 });

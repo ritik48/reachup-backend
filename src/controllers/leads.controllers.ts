@@ -138,21 +138,24 @@ export const createLead = async (req: Request, res: Response) => {
 };
 
 export const uploadFile = async (req: Request, res: Response) => {
-  const filePath = req.file?.path;
+  const file = req.file;
   const { id } = req.body;
-  if (!filePath || !id) {
+  if (!file || !id) {
     res.status(400).json({ success: false, message: "No file provided." });
     return;
   }
 
-  await Lead.updateOne({ _id: id }, { filePath });
+  await Lead.updateOne(
+    { _id: id },
+    { fileData: file.buffer, fileName: file.originalname, fileSize: file.size }
+  );
 
-  const rows = await parseCSV(filePath as string, true);
+  const rows = await parseCSV(file.buffer, true);
 
   const headers = rows.headers; // Get CSV headers
   const row = Object.values(rows.row); // Get first row
 
-  res.status(200).json({ success: true, filePath, headers, firstRow: row });
+  res.status(200).json({ success: true, headers, firstRow: row });
 };
 
 export const fetchSingleRow = async (req: Request, res: Response) => {
@@ -165,13 +168,13 @@ export const fetchSingleRow = async (req: Request, res: Response) => {
   if (!lead) {
     throw new ApiError("Lead not found.", 400);
   }
-  const filePath = lead.filePath;
-  if (!fs.existsSync(filePath as string)) {
+  const fileBuffer = lead.fileData;
+  if (!fileBuffer) {
     throw new ApiError("File not found.", 400);
   }
 
   try {
-    const rows = await parseCSV(filePath as string, true);
+    const rows = await parseCSV(fileBuffer, true);
     console.log({ rows });
 
     const headers = rows.headers; // Get CSV headers
@@ -196,16 +199,15 @@ export const createLeadItems = async (req: Request, res: Response) => {
     throw new ApiError("Lead not found.", 400);
   }
 
-  const filePath = lead.filePath;
-  if (!fs.existsSync(filePath as string)) {
-    throw new ApiError("File not found.", 400);
+  if (!lead.fileData) {
+    throw new ApiError("File data not found.", 400);
   }
 
   const keys = (header as string[]).map((k: string) => k.toLowerCase().trim());
 
   let leadsResult;
   try {
-    leadsResult = await parseCSV(filePath!);
+    leadsResult = await parseCSV(lead.fileData);
     // console.log({ leadsResult });
 
     // update to have leads with only the keys that user selected in the frontend
@@ -231,9 +233,9 @@ export const createLeadItems = async (req: Request, res: Response) => {
   } catch (error) {
     throw new ApiError("Error while reading the file", 500);
   } finally {
-    console.log({ filePathelete: filePath });
+    // console.log({ filePathelete: filePath });
     // delete the file from server once the leads are saved
-    await deleteFile(filePath as string);
+    // await deleteFile(filePath as string);
   }
   res.status(201).json({ success: true, message: "Leads added successfully." });
 };
