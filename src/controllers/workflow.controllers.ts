@@ -51,6 +51,54 @@ export const fetchWorkflow = async (
   res.status(201).json({ success: true, data: workflow });
 };
 
+export const deleteWorkflow = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  let { id } = req.params;
+  if (!id) {
+    throw new ApiError("Invalid request", 400);
+  }
+  const workflow = await Workflow.findById(id);
+
+  if (!workflow) {
+    throw new ApiError("Workflow not found", 404);
+  }
+
+  await Workflow.deleteOne({ _id: id });
+  await WorkflowExecution.deleteMany({ workflow: id });
+  await EmailJob.deleteMany({ workflow: id });
+
+  res.status(201).json({ success: true, data: workflow });
+};
+
+export const editWorkflow = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  let { id } = req.params;
+  if (!id) {
+    throw new ApiError("Invalid request", 400);
+  }
+  const workflow = await Workflow.findById(id);
+
+  if (!workflow) {
+    throw new ApiError("Workflow not found", 404);
+  }
+
+  const { name } = req.body;
+
+  if (!name) {
+    throw new ApiError("Invalid request.", 404);
+  }
+
+  await Workflow.updateOne({ _id: id }, { name });
+
+  res.status(201).json({ success: true, message: "Workflow edited" });
+};
+
 export const fetchAllWorkflow = async (
   req: Request,
   res: Response,
@@ -281,6 +329,7 @@ async function scheduleForLeadItem(
         status: "scheduled",
         scheduledTime: new Date(Date.now() + currentDelay * 60000),
         delayDuration: currentDelay,
+        workflow: execution.workflow,
       });
 
       await job.save();

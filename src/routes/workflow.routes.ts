@@ -3,6 +3,8 @@ import { asyncHandler } from "../utils/AsyncHandler";
 import { isAuthenticated } from "../utils/auth";
 import {
   createWorkflow,
+  deleteWorkflow,
+  editWorkflow,
   executeWorkflow,
   fetchAllWorkflow,
   fetchExecutionstatus,
@@ -19,6 +21,8 @@ workflowRoute.post(
 );
 workflowRoute.get("/", isAuthenticated, asyncHandler(fetchAllWorkflow));
 workflowRoute.get("/:id", isAuthenticated, asyncHandler(fetchWorkflow));
+workflowRoute.delete("/:id", isAuthenticated, asyncHandler(deleteWorkflow));
+workflowRoute.patch("/:id", isAuthenticated, asyncHandler(editWorkflow));
 workflowRoute.get(
   "/:id/status",
   isAuthenticated,

@@ -52,6 +52,7 @@ export interface IEmailProvider extends Document {
 export type IJob = {
   _id: mongoose.Types.ObjectId;
   execution: mongoose.Schema.Types.ObjectId;
+  workflow: mongoose.Schema.Types.ObjectId;
   leadItem: mongoose.Schema.Types.ObjectId;
   // emailTemplate: mongoose.Schema.Types.ObjectId;
   status: "scheduled" | "sent" | "failed";

@@ -3,6 +3,7 @@ import { IJob } from "../types";
 
 const emailJobSchema = new mongoose.Schema<IJob>({
   execution: { type: mongoose.Schema.Types.ObjectId, ref: "WorkflowExecution" },
+  workflow: { type: mongoose.Schema.Types.ObjectId, ref: "Workflow" },
   leadItem: { type: mongoose.Schema.Types.ObjectId, ref: "LeadItem" },
   status: {
     type: String,
