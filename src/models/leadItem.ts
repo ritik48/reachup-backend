@@ -4,8 +4,7 @@ import { ILeadItem } from "../types";
 const LeadItemSchema = new Schema<ILeadItem>({
   leadId: { type: mongoose.Schema.Types.ObjectId, ref: "Lead", required: true }, // Reference to Lead
   email: { type: String, required: true },
-  firstname: { type: String },
-  lastname: { type: String },
+  name: { type: String },
   company: { type: String },
   status: {
     type: String,
