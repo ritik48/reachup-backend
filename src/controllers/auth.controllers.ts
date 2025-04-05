@@ -6,7 +6,6 @@ import { generateAccessToken } from "../utils/auth";
 export const createAccount = async (
   req: Request,
   res: Response,
-  next: NextFunction
 ) => {
   const { name, email, password } = req.body;
 
